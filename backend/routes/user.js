@@ -1,6 +1,6 @@
 const express = require("express")
 const zod = require("zod");
-const { User } = require("../db");
+const { User, Account } = require("../db");
 const jwt = require("jsonwebtoken")
 const {JWT_SECRET} = require("./../config");
 const { authMiddleware } = require("../middleware");
@@ -14,8 +14,16 @@ const signupSchema = zod.object( {
     lastName : zod.string()
 })
 
+// console.log("entered user.js");
+
+// router.get("/gett", function(req,res) {
+//     console.log("coming to index.js");
+//     res.json("coming to get in user.js")
+// })
 
 router.post("/signup", async function(req,res) {
+    // console.log("entered signup router");
+    
     const body = req.body;
     const {success} = signupSchema.safeParse(body)
     if(!success) {
@@ -24,9 +32,12 @@ router.post("/signup", async function(req,res) {
         })
     }
 
-    const existingUser = User.findOne({
+    const existingUser = await User.findOne({
         username : body.username
     })
+
+    console.log(existingUser);
+    
 
     if(existingUser) {
         return res.status(411).json({
@@ -34,21 +45,46 @@ router.post("/signup", async function(req,res) {
         })
     }
 
+    console.log("crossed existing user condition")
     const user = await User.create({
         username : body.username,
         password : body.password,
-        firstName : body.fistName,
+        firstName : body.firstName,
         lastName : body.lastName
     })
 
+    console.log("crossed user create");
+    console.log(user);
+    
+    
     const userId = user._id;
-
+    
+    console.log(userId);
+    
+    
+    //--------------CREATE NEW ACCOUNT--------------
+    
+    const account = await Account.create({
+        userId,
+        balance : 1 + Math.random() * 10000
+    })
+    
+    console.log("account created", account);
+    
+    
+    //-----------------------------------------------
+    
     const token = jwt.sign({userId},JWT_SECRET)
+
+    console.log("Token generated!!");
+    
 
     res.status(200).json({
         message : "User created Successfully",
         token : token
     })
+
+
 })
 
 const signinSchema = zod.object({
@@ -90,13 +126,15 @@ const updateUserSchema = zod.object( {
     lastName : zod.string().optional()
 })
 
-router.put("/user",authMiddleware , async function(req,res) {
+router.put("/userr",authMiddleware , async function(req,res) {
     const {success} = updateUserSchema.safeParse(req.body);
     if(!success) {
         return res.status(411).json({
             message : "Error while updating information"
         })
     }
+    console.log("body parser finished");
+    
 
     await User.updateOne({
         id: req.userId
