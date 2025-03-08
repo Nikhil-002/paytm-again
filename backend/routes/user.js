@@ -126,7 +126,7 @@ const updateUserSchema = zod.object( {
     lastName : zod.string().optional()
 })
 
-router.put("/userr",authMiddleware , async function(req,res) {
+router.put("/user",authMiddleware , async function(req,res) {
     const {success} = updateUserSchema.safeParse(req.body);
     if(!success) {
         return res.status(411).json({
